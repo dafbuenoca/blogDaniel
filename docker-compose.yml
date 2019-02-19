@@ -1,0 +1,49 @@
+version: "3.7"
+services:
+    mysql:
+        image: mariadb:latest
+        hostname: 127.0.0.1
+        volumes:
+            - data-mysql:/var/lib/mysql
+        restart: always
+        ports:
+            - "3307:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: blog
+        networks:
+            - db
+    php:
+        build:
+            context: .
+            dockerfile: ./docker/php/Dockerfile
+        restart: always
+        volumes:
+            - ../blogDaniel/:/usr/src/app
+        environment:
+            DATABASE_URL: ${DATABASE_URL:-mysql://root:root@127.0.0.1:3306/blog}     
+    nginx:
+        image: nginx:1.15.3-alpine
+        restart: always
+        volumes:
+            - ../blogDaniel:/usr/src/app
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+        ports:
+            - "81:80"    
+        depends_on:
+            - php
+    adminer:
+        image: adminer
+        ports:
+            - "8087:8080"
+        depends_on:
+            - mysql
+        networks:
+            - db
+        restart: always
+volumes:
+    data-mysql:
+
+networks:
+    db:
+        name: blog-databse
